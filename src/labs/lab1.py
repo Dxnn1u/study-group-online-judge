@@ -185,11 +185,11 @@ def gpt2_complete(
         next_token = torch.where(active, next_token, eos_id)
 
         ids = torch.cat([ids, next_token[:, None]], dim=1)
-        attention_mask = torch.cat([attention_mask, torch.ones(batch_size, 1, dtype=torch.long, device=ids.device)], dim=1)
+        attention_mask = torch.cat([attention_mask, active[:, None].to(dtype=attention_mask.dtype)], dim=1) 
         step_logits.append(next_logits)
 
         lengths = lengths + active.long()
-        finished = finished | (next_token == tokenizer.eos_token_id)
+        finished = finished | (next_token == eos_id) | (lengths >= max_seq_length)
     
     if len(step_logits) == 0:
         logits = torch.empty((batch_size, 0, model.config.vocab_size), device=ids.device)
