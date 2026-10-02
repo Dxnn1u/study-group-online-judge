@@ -11,4 +11,3 @@ uv run --no-sync python -u -m judge.run_task \
   --task "$JUDGE_TASK_ID" \
   --submission "$JUDGE_SUBMISSION_DIR" \
   --output "$JUDGE_OUTPUT_DIR/result.json"
-
