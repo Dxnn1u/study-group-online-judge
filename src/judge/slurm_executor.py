@@ -92,7 +92,7 @@ class SlurmExecutor:
                 check=True,
                 capture_output=True,
                 text=True,
-                timeout=30,
+                timeout=120,
                 **kwargs,
             )
         except (subprocess.SubprocessError, OSError) as error:
