@@ -81,6 +81,12 @@ else
   trap 'rm -f uv.lock "$lock_backup"' EXIT
 fi
 uv sync --no-sources --no-dev
+# Slurm runs the trusted evaluator with the participant's Python environment.
+# Older participant commits may not declare the evaluator's kernel dependency.
+if [[ "${JUDGE_TASK_ID:-}" == lab5 ]]; then
+  echo '[judge] installing Lab 5 evaluation kernels into submission environment'
+  uv pip install --python .venv/bin/python 'kernels>=0.17.0,<0.18.0'
+fi
 if [[ "$revision" == latest && "${JUDGE_SETUP_ONCE:-}" == 1 ]]; then
   git rev-parse 'HEAD^{commit}' >"${destination}.ready.tmp"
   mv -- "${destination}.ready.tmp" "${destination}.ready"

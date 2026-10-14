@@ -38,6 +38,11 @@ class SetupRepoTests(unittest.TestCase):
             f"#!{sys.executable}\n"
             "from pathlib import Path\n"
             "import os, sys\n"
+            "if sys.argv[1] == 'pip':\n"
+            "    assert sys.argv[1:] == ['pip', 'install', '--python', '.venv/bin/python', 'kernels>=0.17.0,<0.18.0']\n"
+            "    assert Path('.venv/bin/python').exists()\n"
+            "    Path('.venv/kernel-install').write_text('installed')\n"
+            "    sys.exit(int(os.environ.get('FAKE_KERNEL_EXIT', '0')))\n"
             "assert sys.argv[1:] == ['sync', '--no-sources', '--no-dev']\n"
             "assert not any(os.environ.get(name) for name in ['WANDB_API_KEY', 'TS_AUTHKEY', 'JUDGE_API_TOKEN'])\n"
             "Path('.venv').mkdir(exist_ok=True)\n"
@@ -111,6 +116,28 @@ class SetupRepoTests(unittest.TestCase):
         updated = self.setup(self.second_revision)
         self.assertEqual(updated.returncode, 0, updated.stderr)
         self.assertEqual((self.destination / "solution.txt").read_text(), "second\n")
+
+    def test_lab5_installs_kernel_in_old_submission_without_declared_dependency(self):
+        self.environment["JUDGE_TASK_ID"] = "lab5"
+        result = self.setup()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue((self.destination / ".venv/kernel-install").is_file())
+        self.assertEqual((self.destination / "uv.lock").read_text(), "submitted lock\n")
+        self.assertEqual(
+            self.git("status", "--porcelain", cwd=self.destination).stdout, ""
+        )
+
+    def test_other_labs_do_not_install_kernel_overlay(self):
+        self.environment["JUDGE_TASK_ID"] = "lab4"
+        result = self.setup()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse((self.destination / ".venv/kernel-install").exists())
+
+    def test_kernel_install_failure_propagates_and_restores_submission_lock(self):
+        self.environment.update(JUDGE_TASK_ID="lab5", FAKE_KERNEL_EXIT="1")
+        result = self.setup()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual((self.destination / "uv.lock").read_text(), "submitted lock\n")
 
     def advance_default_branch(self):
         self.git("branch", "-m", "new-default")

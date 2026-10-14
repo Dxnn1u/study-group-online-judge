@@ -191,7 +191,10 @@ class PerplexityEvaluator(Evaluator):
         print(f"[perplexity] loading model {model_id} on {CUDA_DEVICE}", flush=True)
         model_options = {"dtype": self.dtype}
         if self.max_seq_length is not None:
-            model_options["attn_implementation"] = "flash_attention_2"
+            # Select the prebuilt Hub kernel explicitly. The automatic FA2
+            # fallback can replace a kernel-loading error with a misleading
+            # missing-flash_attn ImportError.
+            model_options["attn_implementation"] = "kernels-community/flash-attn2"
         model = cast(
             torch.nn.Module,
             AutoModelForCausalLM.from_pretrained(model_id, **model_options),

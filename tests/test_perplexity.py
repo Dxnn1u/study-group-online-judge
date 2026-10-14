@@ -551,7 +551,9 @@ def test_packed_evaluator_tokenizes_truncates_flushes_and_preserves_corpus_score
     assert result.metrics["evaluated_documents"] == 3
     assert result.metrics["skipped_documents"] == 2
     runtime.load_model.assert_called_once_with(
-        "student/model", dtype="bfloat16", attn_implementation="flash_attention_2"
+        "student/model",
+        dtype="bfloat16",
+        attn_implementation="kernels-community/flash-attn2",
     )
     runtime.compile.assert_called_once_with(runtime.model, dynamic=True, fullgraph=True)
     for call in model.call_args_list:
@@ -668,7 +670,7 @@ def test_real_cuda_packed_flashattention_and_inductor_match_independent_document
             scores = reference_scores(logits, inputs, torch.ones_like(inputs))
             for key, values in expected.items():
                 values.extend(scores[key])
-    model.set_attn_implementation("flash_attention_2")
+    model.set_attn_implementation("kernels-community/flash-attn2")
     torch._dynamo.reset()
     try:
         compiled = torch.compile(model, dynamic=True, fullgraph=True)
@@ -676,3 +678,29 @@ def test_real_cuda_packed_flashattention_and_inductor_match_independent_document
         assert_scores(actual, expected, rel=2e-3)
     finally:
         torch._dynamo.reset()
+
+
+def test_explicit_hub_kernel_preserves_real_loading_error(tmp_path, monkeypatch):
+    from transformers import modeling_utils
+
+    # Exercise real from_pretrained dispatch: implicit FA2 fallback would replace
+    # this error with "flash_attn not installed", hiding the actionable cause.
+    tiny_model("llama").save_pretrained(tmp_path)
+    requested = []
+
+    def unavailable_binary(implementation, **kwargs):
+        requested.append(implementation)
+        raise ValueError("No compatible prebuilt kernel for this CUDA runtime")
+
+    monkeypatch.setattr(modeling_utils, "is_kernels_available", lambda: True)
+    monkeypatch.setattr(
+        modeling_utils, "lazy_import_flash_attention", unavailable_binary
+    )
+    with (
+        patch("judge.evaluators.perplexity.torch.cuda.is_available", return_value=True),
+        pytest.raises(ValueError, match="No compatible prebuilt kernel"),
+    ):
+        PerplexityEvaluator(max_seq_length=8192, dtype="bfloat16").evaluate(
+            str(tmp_path), Dataset.from_dict({"text": ["short"]})
+        )
+    assert requested == ["kernels-community/flash-attn2"]

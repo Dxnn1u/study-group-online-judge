@@ -94,8 +94,12 @@ and bfloat16 FlashAttention-2 with whole documents greedily packed into an
 8,192-token budget. Documents are tokenized once, truncated to 8,192 tokens,
 and use independent attention and reset position IDs. Cross-document next-token
 targets are excluded; real EOS tokens are scored. Float32 cross-entropy uses
-2,048-token chunks. The `kernels` dependency supplies FlashAttention-2 when
-`flash-attn` is not installed. Model compilation uses `dynamic=True, fullgraph=True`.
+2,048-token chunks. The evaluator explicitly selects
+`attn_implementation="kernels-community/flash-attn2"`; it uses the prebuilt Hub
+kernel through `kernels` without requiring the `flash-attn` package. Lab 5
+submission setup installs `kernels` into the participant's `.venv`, including
+for older commits that do not declare it. Model compilation uses
+`dynamic=True, fullgraph=True`.
 Lab 4 retains padded batches and truncates to its tokenizer's maximum length.
 Existing tokenizer padding tokens and padding side are preserved; otherwise EOS
 is used for padding. Padding is excluded from both the loss and token count,
