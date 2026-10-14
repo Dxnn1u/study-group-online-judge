@@ -141,6 +141,7 @@ def handle(request: RemoteRequest) -> RemoteSnapshot:
                             "HF_HOME": str(Path(config.work_root) / "hf-cache"),
                             "JUDGE_REMOTE_WORK_ROOT": config.work_root,
                             "JUDGE_TASK_ID": request.submission.task_id,
+                            "JUDGE_TRUSTED_ROOT": request.trusted_root,
                         }
                     )
                     # Dependency setup can outlast W&B's heartbeat timeout.

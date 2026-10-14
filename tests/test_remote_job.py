@@ -93,6 +93,10 @@ class RemoteJobTests(unittest.TestCase):
             self.setup_process.call_args.kwargs["env"]["JUDGE_TASK_ID"], "lab5"
         )
         self.assertEqual(self.submit.call_args.kwargs["task_id"], "lab5")
+        self.assertEqual(
+            self.setup_process.call_args.kwargs["env"]["JUDGE_TRUSTED_ROOT"],
+            self.request.trusted_root,
+        )
 
     def test_rejects_changed_job_identity(self):
         handle(self.request)

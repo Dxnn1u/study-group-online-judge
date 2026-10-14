@@ -74,18 +74,42 @@ checkout_revision "$destination"
 # Ignoring the Linux CPU-only source can update uv.lock. Keep the submitted
 # checkout intact while retaining its resolved CUDA environment in .venv.
 lock_backup="$(mktemp)"
+runtime_constraints=""
+restore_lock=0
 if [[ -f uv.lock ]]; then
   cp uv.lock "$lock_backup"
-  trap 'cp "$lock_backup" uv.lock; rm -f "$lock_backup"' EXIT
-else
-  trap 'rm -f uv.lock "$lock_backup"' EXIT
+  restore_lock=1
 fi
+cleanup_setup() {
+  local setup_exit_code=$?
+  if [[ "$restore_lock" == 1 ]]; then
+    cp "$lock_backup" uv.lock
+  else
+    rm -f uv.lock
+  fi
+  rm -f "$lock_backup"
+  [[ -z "$runtime_constraints" ]] || rm -f "$runtime_constraints"
+  exit "$setup_exit_code"
+}
+trap cleanup_setup EXIT
 uv sync --no-sources --no-dev
 # Slurm runs the trusted evaluator with the participant's Python environment.
-# Older participant commits may not declare the evaluator's kernel dependency.
+# Resolve the whole evaluator stack together; installing only kernels can
+# upgrade huggingface-hub while retaining an incompatible old Transformers.
 if [[ "${JUDGE_TASK_ID:-}" == lab5 ]]; then
-  echo '[judge] installing Lab 5 evaluation kernels into submission environment'
-  uv pip install --python .venv/bin/python 'kernels>=0.17.0,<0.18.0'
+  if [[ -z "${JUDGE_TRUSTED_ROOT:-}" ]]; then
+    echo 'trusted evaluator directory is required' >&2
+    exit 2
+  fi
+  trusted_root="$JUDGE_TRUSTED_ROOT"
+  runtime_constraints="$(mktemp)"
+  uv pip freeze --python "$trusted_root/.venv/bin/python" --exclude-editable \
+    --exclude study-group-online-judge >"$runtime_constraints"
+  echo '[judge] installing current evaluator runtime into submission environment'
+  uv pip install --python .venv/bin/python --requirements "$trusted_root/pyproject.toml" \
+    --constraints "$runtime_constraints"
+  uv pip check --python .venv/bin/python
+  PYTHONPATH="$trusted_root/src" .venv/bin/python "$trusted_root/src/judge/check_runtime.py"
 fi
 if [[ "$revision" == latest && "${JUDGE_SETUP_ONCE:-}" == 1 ]]; then
   git rev-parse 'HEAD^{commit}' >"${destination}.ready.tmp"

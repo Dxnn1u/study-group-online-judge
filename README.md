@@ -97,9 +97,21 @@ targets are excluded; real EOS tokens are scored. Float32 cross-entropy uses
 2,048-token chunks. The evaluator explicitly selects
 `attn_implementation="kernels-community/flash-attn2"`; it uses the prebuilt Hub
 kernel through `kernels` without requiring the `flash-attn` package. Lab 5
-submission setup installs `kernels` into the participant's `.venv`, including
-for older commits that do not declare it. Model compilation uses
+submission setup resolves the trusted judge's complete runtime requirements
+from `pyproject.toml` into the participant's `.venv`, including for older commits.
+The install is constrained to the exact versions in the prepared trusted
+environment, preserving its resolved CUDA stack and excluding the judge project
+itself from the constraints. Participant-only packages remain installed.
+Transformers 5, Hub 1, PyTorch 2, and Datasets 4 are required. It runs `uv pip check`
+and imports the evaluator and kernel integration with that same interpreter
+before submitting to Slurm; installed versions are recorded in `setup.log`.
+Model compilation uses
 `dynamic=True, fullgraph=True`.
+
+After changing runtime dependencies, run `uv sync --frozen`, `uv pip check`,
+`python -m judge.check_runtime`, and the test suite locally. Validate the same
+full-runtime installation against an older participant environment; installing
+a single new package is insufficient to establish compatibility.
 Lab 4 retains padded batches and truncates to its tokenizer's maximum length.
 Existing tokenizer padding tokens and padding side are preserved; otherwise EOS
 is used for padding. Padding is excluded from both the loss and token count,
