@@ -1,10 +1,11 @@
-"""GPT-2 baseline submission for local Lab 4 smoke tests.
+"""Lab 5 submission: Llama 3.2 1B (random init) trained on Dolma 3 with Muon + AdamW.
 
-Replace this with your model's Hugging Face ID for a real submission.
+Run: 8x H200, 3.0B tokens, 11,444 optimizer steps of 262,144 tokens each.
+Code: https://github.com/Dxnn1u/ML-study-group-lab-5 (train.py, data.py, split.py).
 """
 
 eval_model_id = "Dxnn1u/llama-3.2-1B"
-training_run_url = "https://wandb.ai/<WANDB_ENTITY>/lab5-training-llama/runs/9tgz2zs6"
+training_run_url = "https://wandb.ai/cerulean-labs/lab5-training-llama/runs/9tgz2zs6"
 training_config = {
     "optimizer": {
         "name": "Muon (hidden 2D matrices) + AdamW (everything else)",
@@ -59,11 +60,10 @@ training_config = {
     "shuffle_seed": 42,
     "holdout_documents": 50_000,
     "holdout_excluded_from_training": True,
-    "non_padding_tokens_seen": 2_999_975_936,
+    "non_padding_tokens_seen": 2_999_975_936,  # 11,444 steps x 262,144 packed tokens, no padding, no repeats
     "repeated_tokens_counted": True,
-    "duration_seconds": 12_270,
+    "duration_seconds": 12_270,  # job wall time incl. startup, torch.compile, evals and checkpoints
     "gpu_type": "H200",
     "gpu_count": 8,
-    "validation_documents": 10_000,
+    "validation_documents": 10_000,  # held-out docs used for validation (first 10,000 of the 50,000)
 }
-
