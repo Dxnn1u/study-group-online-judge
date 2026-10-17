@@ -1,11 +1,11 @@
 """Lab 5 submission: Llama 3.2 1B (random init) trained on Dolma 3 with Muon-VS + AdamW.
 
-Run: 8x H200, 6.0B non-padding tokens, 23,034 optimizer steps, 52.64 H200-hours.
+Run: 8x H200, 6.0B non-padding tokens, 23,034 optimizer steps, 52.44 H200-hours.
 Code: https://github.com/Dxnn1u/ML-study-group-lab-5 (train.py, data.py, split.py).
 """
 
-eval_model_id = "Dxnn1u/llama-3.2-1B-lab5-6b"
-training_run_url = "https://wandb.ai/cerulean-labs/lab5-training-llama/runs/r6e1kek0"
+eval_model_id = "Dxnn1u/llama-3.2-1B-lab5-6b-d40"
+training_run_url = "https://wandb.ai/cerulean-labs/lab5-training-llama/runs/qbw8ooaq"
 training_config = {
     "optimizer": {
         "name": "Muon-VS (hidden 2D matrices) + AdamW (everything else)",
@@ -41,13 +41,20 @@ training_config = {
             },
         },
         "schedule": {
-            "type": "warmup, constant, then linear decay over the last 20% (per optimizer step, all groups)",
+            "type": "warmup, constant, then linear decay over the last 40% (per optimizer step, all groups)",
             "peak_lr": 2e-3,
             "warmup_steps": 200,
-            "decay_steps": 4607,
+            "decay_steps": 9214,
             "total_steps": 23_034,
             "min_lr": 2e-4,
         },
+        "schedule_note": (
+            "the first 13,818 steps are shared with a sibling run that decayed over its last "
+            "20% instead; both are 23,034 steps over the same 6B tokens, and the branch point "
+            "is inside the constant-learning-rate phase of both, so each model's trajectory is "
+            "exactly the one it would have had on its own. 52.44 H200-hours of compute produced "
+            "this trajectory, 20.86 of them after the branch"
+        ),
         "grad_clip_norm": 1.0,
         "batch": {
             "non_padding_tokens_per_step": 260_478,
@@ -108,15 +115,16 @@ training_config = {
     ),
     "tokens_repeated": False,
     "repeated_tokens_counted": True,
-    "duration_seconds": 23_689,
-    "h200_hours": 52.64,
+    "duration_seconds": 23_597,
+    "h200_hours": 52.44,
     "gpu_type": "H200",
     "gpu_count": 8,
     "validation_documents": 10_000,
     "validation_note": (
         "val.bin packs the held-out documents into blocks the same way, so the logged "
-        "eval/perplexity scores each document from its own BOS, as the judge does: 15.29 "
-        "against 15.32 from a direct replication of the judge's scorer on the same 10,000 "
-        "documents"
+        "eval/perplexity scores each document from its own BOS, as the judge does. The "
+        "rebuild landed mid-run, so this run's logged curve switches metrics partway and "
+        "should not be read; a direct replication of the judge's scorer gives 14.53 on "
+        "10,000 held-out documents"
     ),
 }
