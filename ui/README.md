@@ -15,7 +15,7 @@ docker build -t cerulean-judge-ui ./ui
 The image builds React with Vite and serves it with Nginx on port 80.
 Requests to `/api/` are forwarded to `JUDGE_API_URL` (default `http://api:8000`).
 Set this to the backend's reachable HTTP or HTTPS origin, without a trailing slash or
-path. The browser uses the same origin; W&B and Slack credentials stay on the API.
+path. The browser uses the same origin; Flock and Slack credentials stay on the API.
 
 For a backend running locally on Docker Desktop or OrbStack:
 

@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import os
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 
@@ -17,7 +17,7 @@ from judge.ssh import RemoteConfig
 
 
 @asynccontextmanager
-async def lifespan(judge_app: FastAPI) -> AsyncIterator[None]:
+async def lifespan(judge_app: FastAPI) -> AsyncGenerator[None]:
     load_dotenv()
     configure_logging()
 
