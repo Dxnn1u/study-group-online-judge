@@ -29,18 +29,18 @@ docker run --rm --network cerulean-ui -p 8080:80 \
 Open http://localhost:8080. The backend must listen on an interface reachable
 from Docker. On Linux, also pass `--add-host=host.docker.internal:host-gateway`.
 
-For Compose, add this service to the judge's existing Compose file:
+The repository root `compose.yaml` includes a `leaderboard` service:
 
-```yaml
-  ui:
-    build:
-      context: ./ui
-    ports:
-      - "8080:80"
-    environment:
-      JUDGE_API_URL: http://api:8000
-    restart: unless-stopped
+```sh
+docker compose up -d --build
 ```
+
+It serves HTTP on container port `80`, available to a reverse proxy on the
+Compose network. Set `JUDGE_API_URL` in the root `.env` to choose the OJ origin;
+the default is `http://api:8000`. For example, set
+`JUDGE_API_URL=https://oj.cerulean.works` to use an externally hosted OJ.
+After changing the URL, run `docker compose up -d --force-recreate leaderboard`
+from the repository root. No image rebuild is needed for URL changes.
 
 `/healthz` checks the UI server, independently of backend availability.
 Edit `src/lab-names.json` to rename labs, then rebuild the image.
